@@ -1,9 +1,12 @@
 import 'dotenv/config';
+import dns from 'node:dns';
+dns.setServers(['8.8.8.8', '8.8.4.4']);
+
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-// import connectDB from './utils/db.js'
-import mongoose from 'mongoose';
+import connectDB from './utils/db.js';
+
 
 const app = express();
 
@@ -12,12 +15,9 @@ app.use(express.urlencoded({extended:true}));
 app.use(cookieParser());
 app.use(cors())
 
-const connectToDB = async () => {
-    await mongoose.connect(process.env.DATABASE_URL as string);
-    console.log('Connected to MongoDB');
-}
+connectDB();
 
-connectToDB()
+
 
 app.listen(process.env.PORT,()=>{
     console.log(`Server is running on port ${process.env.PORT}`);
