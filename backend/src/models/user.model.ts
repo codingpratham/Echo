@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
-    id:{
+    _id:{
         type:String,
         required:true,
         unique:true
@@ -27,8 +27,15 @@ const userSchema = new mongoose.Schema({
     onboarding:{
         type:mongoose.Schema.Types.ObjectId,
         ref:'Onboarding'
+    },
+    refreshToken:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:'RefreshToken'
+    },
+    passwordResetToken:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:'PasswordResetToken'
     }
-
 })
 
 const User = mongoose.model('User',userSchema);

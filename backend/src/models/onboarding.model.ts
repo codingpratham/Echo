@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const onboardingSchema = new mongoose.Schema({
-    id:{
+    _id:{   
         type:String,
         required:true,
         unique:true
