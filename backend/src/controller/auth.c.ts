@@ -345,7 +345,7 @@ export const resetPassword = async (
     await PasswordResetToken.deleteMany({
       where: { token },
     });
-
+                                                                                
     await PasswordResetToken.deleteMany({
       where: { userId: stored.userId },
     });
