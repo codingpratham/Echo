@@ -1,4 +1,5 @@
 import React from "react"
+import {api} from "../lib/apis"
 
 const Login = () => {
 
@@ -15,9 +16,20 @@ const Login = () => {
         setFormData(prev => ({ ...prev, [name]: value }))
     }
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
-
+        if (state === "login") {
+            const data = await api.post('/api/v1/auth/login', formData)
+            .then(res => {console.log(res.data)})
+            .catch(err => console.log(err))
+            console.log(data)
+            
+        } else {
+            
+            const data = await api.post('/api/v1/auth/register', formData)
+            .then(res => {console.log(res.data)})
+            console.log(data)
+        }
     }
 
     return (
