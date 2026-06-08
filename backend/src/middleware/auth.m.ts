@@ -4,7 +4,7 @@ import RefreshToken from "../models/refreshToken.model.js";
 
 declare module "express" {
   interface Request {
-    userId?: number;
+    userId?: string;
   }
 }
 
@@ -20,9 +20,7 @@ export const AuthMiddleware = async (
   }
 
   try {
-    const stored = await RefreshToken.findOne({
-      where: { token },
-    });
+    const stored = await RefreshToken.findOne({ token });
 
     if (!stored) {
       return res.status(403).json({
@@ -30,7 +28,7 @@ export const AuthMiddleware = async (
       });
     }
 
-    req.userId = Number(stored.userId);
+    req.userId = stored.userId;
 
     next();
   } catch (error) {

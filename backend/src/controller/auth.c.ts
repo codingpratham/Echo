@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import mongoose from "mongoose";
 import { sendMail } from "../utils/mailer.js";
 import User from "../models/user.model.js";
 import RefreshToken from "../models/refreshToken.model.js";
@@ -20,9 +21,7 @@ export const Register = async (req: Request, res: Response): Promise<void> => {
   }
 
   try {
-    const existingUser = await User.findOne({
-      where: { email },
-    });
+    const existingUser = await User.findOne({ email });
 
     if (existingUser) {
       res.status(411).json({
@@ -39,17 +38,22 @@ export const Register = async (req: Request, res: Response): Promise<void> => {
       password: hashed,
     });
 
-    const accessToken = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, {
+    const accessToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET!, {
       expiresIn: "15m",
     });
 
     const refreshToken = crypto.randomBytes(40).toString("hex");
 
-    await RefreshToken.create({
-      token: refreshToken,
-      userId: user.id,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    });
+    await RefreshToken.findOneAndUpdate(
+      { userId: user._id.toString() },
+      {
+        token: refreshToken,
+        userId: user._id.toString(),
+        user: user._id as mongoose.Types.ObjectId,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      },
+      { upsert: true },
+    );
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
@@ -81,9 +85,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   }
 
   try {
-    const user = await User.findOne({
-      where: { email },
-    });
+    const user = await User.findOne({ email });
 
     if (!user) {
       res.status(401).json({
@@ -102,18 +104,23 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     const accessToken = jwt.sign(
-      { userId: user.id as any },
+      { userId: user._id as any },
       process.env.JWT_SECRET!,
       { expiresIn: "15m" },
     );
 
     const refreshToken = crypto.randomBytes(40).toString("hex");
 
-    await RefreshToken.create({
-      token: refreshToken,
-      userId: user.id,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    });
+    await RefreshToken.findOneAndUpdate(
+      { userId: user._id.toString() },
+      {
+        token: refreshToken,
+        userId: user._id.toString(),
+        user: user._id as mongoose.Types.ObjectId,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      },
+      { upsert: true },
+    );
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
@@ -145,9 +152,7 @@ export const refresh = async (req: Request, res: Response): Promise<void> => {
   }
 
   try {
-    const stored = await RefreshToken.findOne({
-      where: { token: refreshToken },
-    });
+    const stored = await RefreshToken.findOne({ token: refreshToken });
 
     if (!stored) {
       res.status(403).json({
@@ -156,15 +161,10 @@ export const refresh = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    await RefreshToken.deleteMany({
-      where: { token: refreshToken },
-    });
-
     const newRefreshToken = crypto.randomBytes(40).toString("hex");
 
-    await RefreshToken.create({
+    await RefreshToken.findByIdAndUpdate(stored._id, {
       token: newRefreshToken,
-      userId: stored.userId,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     });
 
@@ -193,12 +193,10 @@ export const refresh = async (req: Request, res: Response): Promise<void> => {
 };
 
 export const logout = async (req: Request, res: Response): Promise<void> => {
-  const RefreshToken = req.cookies.refreshToken;
+  const refreshToken = req.cookies.refreshToken;
 
-  if (RefreshToken) {
-    await RefreshToken.deleteMany({
-      where: { token: RefreshToken },
-    });
+  if (refreshToken) {
+    await RefreshToken.deleteMany({ token: refreshToken });
   }
 
   res.json({ message: "Logged out" });
@@ -215,9 +213,7 @@ export const profile = async (req: Request, res: Response): Promise<void> => {
   }
 
   try {
-    const user = await User.findOne({
-      where: { id: userId },
-    });
+    const user = await User.findById(userId);
 
     if (!user) {
       res.status(404).json({
@@ -252,9 +248,7 @@ export const forgetPassword = async (
   }
 
   try {
-    const user = await User.findOne({
-      where: { email },
-    });
+    const user = await User.findOne({ email });
 
     if (!user) {
       res.status(404).json({
@@ -265,11 +259,16 @@ export const forgetPassword = async (
 
     const resetToken = crypto.randomBytes(40).toString("hex");
 
-    await PasswordResetToken.create({
-      token: resetToken,
-      userId: user.id,
-      expiresAt: new Date(Date.now() + 15 * 60 * 1000),
-    });
+    await PasswordResetToken.findOneAndUpdate(
+      { userId: user._id.toString() },
+      {
+        token: resetToken,
+        userId: user._id.toString(),
+        user: user._id as mongoose.Types.ObjectId,
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+      },
+      { upsert: true },
+    );
 
     const resetLink = `http://localhost:3000/api/v1/auth/reset-password?token=${resetToken}`;
 
@@ -317,9 +316,7 @@ export const resetPassword = async (
   }
 
   try {
-    const stored = await PasswordResetToken.findOne({
-      where: { token },
-    });
+    const stored = await PasswordResetToken.findOne({ token });
 
     if (!stored) {
       res.status(400).json({
@@ -338,17 +335,13 @@ export const resetPassword = async (
     const hashed = await bcrypt.hash(password, 10);
 
     await User.updateOne(
-      { id: stored.userId },
+      { _id: stored.userId },
       { password: hashed }
     );
 
-    await PasswordResetToken.deleteMany({
-      where: { token },
-    });
-                                                                                
-    await PasswordResetToken.deleteMany({
-      where: { userId: stored.userId },
-    });
+    await PasswordResetToken.deleteMany({ token });
+
+    await PasswordResetToken.deleteMany({ userId: stored.userId });
 
     res.status(200).json({
       message: "Password reset successful",

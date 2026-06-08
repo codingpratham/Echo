@@ -1,10 +1,10 @@
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
-    _id:{
+    id:{
         type:String,
-        required:true,
-        unique:true
+        unique:true,
+        index:true
     },
     email:{
         type:String,
@@ -35,6 +35,12 @@ const userSchema = new mongoose.Schema({
     passwordResetToken:{
         type:mongoose.Schema.Types.ObjectId,
         ref:'PasswordResetToken'
+    }
+},{ id:false })
+
+userSchema.pre('validate', function() {
+    if (!this.id) {
+        this.id = this._id.toString();
     }
 })
 
