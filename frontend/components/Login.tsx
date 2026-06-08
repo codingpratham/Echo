@@ -1,9 +1,11 @@
 import React from "react"
 import {api} from "../lib/apis"
+import { useNavigate } from "react-router"
 
 const Login = () => {
 
     const [state, setState] = React.useState("login")
+    const navigate = useNavigate()
 
     const [formData, setFormData] = React.useState({
         name: '',
@@ -23,12 +25,14 @@ const Login = () => {
             .then(res => {console.log(res.data)})
             .catch(err => console.log(err))
             console.log(data)
+                navigate("/")
             
         } else {
             
             const data = await api.post('/api/v1/auth/register', formData)
             .then(res => {console.log(res.data)})
             console.log(data)
+                navigate("/")
         }
     }
 
