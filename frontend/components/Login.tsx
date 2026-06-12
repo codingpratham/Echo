@@ -1,6 +1,7 @@
 import React from "react"
 import {api} from "../lib/apis"
 import { useNavigate } from "react-router"
+import { authState } from "../store/AuthStore"
 
 const Login = () => {
 
@@ -20,19 +21,20 @@ const Login = () => {
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
-        if (state === "login") {
-            const data = await api.post('/api/v1/auth/login', formData)
-            .then(res => {console.log(res.data)})
-            .catch(err => console.log(err))
-            console.log(data)
+        try {
+            if (state === "login") {
+                const response = await api.post('/api/v1/auth/login', formData)
+                console.log(response.data)
+                authState.setState({ isAuthenticated: true })
                 navigate("/")
-            
-        } else {
-            
-            const data = await api.post('/api/v1/auth/register', formData)
-            .then(res => {console.log(res.data)})
-            console.log(data)
+            } else {
+                const response = await api.post('/api/v1/auth/register', formData)
+                console.log(response.data)
+                authState.setState({ isAuthenticated: true })
                 navigate("/")
+            }
+        } catch (err) {
+            console.log(err)
         }
     }
 
