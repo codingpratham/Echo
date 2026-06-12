@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router'
 import Auth from './Pages/auth/Auth'
 import MainPage from './Pages/MainPage'
-// import ProtectedRoute from '../lib/ProtectedRoute'
+import ProtectedRoute from '../lib/ProtectedRoute'
 
 
 const App = () => {
@@ -10,7 +10,11 @@ const App = () => {
     <BrowserRouter>
       <Routes>
         <Route path='/auth' element={<Auth />} />
-        <Route path='/' element={<MainPage />} />
+        <Route path='/' element={
+          <ProtectedRoute>
+            <MainPage />
+          </ProtectedRoute>
+        } />
       </Routes>
     </BrowserRouter>
     </div>
