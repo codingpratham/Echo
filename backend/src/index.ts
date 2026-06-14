@@ -7,9 +7,11 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import connectDB from './utils/db.js';
 import indexRouter from './routes/index.r.js';
-
+import http from 'http';
 
 const app = express();
+
+const server = http.createServer(app);
 
 app.use(express.json());
 app.use(express.urlencoded({extended:true}));
@@ -25,6 +27,6 @@ app.get('/',(req,res)=>{
     res.send('Hello World!');
 })
 
-app.listen(process.env.PORT,()=>{
+server.listen(process.env.PORT,()=>{
     console.log(`Server is running on port ${process.env.PORT}`);
 })
