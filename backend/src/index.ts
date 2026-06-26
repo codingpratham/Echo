@@ -37,6 +37,9 @@ app.get('/',(req,res)=>{
     res.send('Hello World!');
 })
 
-server.listen(process.env.PORT,()=>{
-    console.log(`Server is running on port ${process.env.PORT}`);
+const port = process.env.PORT ?? 3000;
+
+
+server.listen(port,()=>{
+    console.log(`Server is running on port ${port}`);
 })

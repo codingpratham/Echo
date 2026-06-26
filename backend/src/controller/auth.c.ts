@@ -8,8 +8,23 @@ import User from "../models/user.model.js";
 import RefreshToken from "../models/refreshToken.model.js";
 import PasswordResetToken from "../models/passwordResetToken.model.js";
 import Onboarding from "../models/onboarding.model.js";
+import cloudinary from "../utils/cloudinary.js";
 
+const getErrorMessage = (error: unknown) => {
+  if (error instanceof Error) {
+    return error.message;
+  }
 
+  if (typeof error === "string") {
+    return error;
+  }
+
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return "Unknown error";
+  }
+};
 
 export const Register = async (req: Request, res: Response): Promise<void> => {
   const { email, password, name } = req.body;
@@ -40,9 +55,13 @@ export const Register = async (req: Request, res: Response): Promise<void> => {
       isOnboarding: false,
     });
 
-    const accessToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET!, {
-      expiresIn: "15m",
-    });
+    const accessToken = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET!,
+      {
+        expiresIn: "15m",
+      },
+    );
 
     const refreshToken = crypto.randomBytes(40).toString("hex");
 
@@ -336,10 +355,7 @@ export const resetPassword = async (
 
     const hashed = await bcrypt.hash(password, 10);
 
-    await User.updateOne(
-      { _id: stored.userId },
-      { password: hashed }
-    );
+    await User.updateOne({ _id: stored.userId }, { password: hashed });
 
     await PasswordResetToken.deleteMany({ token });
 
@@ -356,56 +372,60 @@ export const resetPassword = async (
   }
 };
 
-export const onBoarding = async (req:Request , res:Response)=>{
+export const onBoarding = async (req: Request, res: Response) => {
   const userId = req.userId;
 
-  if(!userId){
-    res.status(401).json({
-      message:"Unauthorized"
-    })
-    return;
+  if (!userId) {
+    return res.status(401).json({
+      message: "Unauthorized",
+    });
   }
 
-  const {bio} = req.body;
+  const { bio } = req.body;
 
-  if(!bio){
-    res.status(411).json({
-      message:"input field is missing"
-    })
-    return;
-  }
-  try{
-    const user= await User.findById(userId);
+  try {
+    let imageUrl = "";
 
-    if(!user){
-      res.status(404).json({
-        message:"User not found"
-      })
-      return;
+    if (req.file) {
+      const fileData = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
+
+      const result = await cloudinary.uploader.upload(fileData);
+
+      imageUrl = result.secure_url;
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
     }
 
     const onboarding = await Onboarding.create({
-      bio: bio,
-      id: new mongoose.Types.ObjectId().toString(),
+      bio,
       userId: user._id.toString(),
-      user: user._id as mongoose.Types.ObjectId
-    })
+      user: user._id,
+      profilePicture: imageUrl,
+    });
 
-    const updatedUser = await User.findByIdAndUpdate(userId,{
-      isOnboarding:true,
-      onboarding: onboarding._id as mongoose.Types.ObjectId
-    },{new:true})
+    user.isOnboarding = true;
+    user.onboarding = onboarding._id as mongoose.Types.ObjectId;
 
-    res.status(200).json({
-      message:"Onboarding completed successfully",
-      user:updatedUser,
-      onboarding:onboarding
-    })
+    await user.save();
 
-  }catch(error: any){
-    console.error(error);
-    res.status(500).json({
-      message:"Internal server error"
-    })
+    return res.status(200).json({
+      success: true,
+      message: "Onboarding completed successfully",
+      user,
+      onboarding,
+    });
+  } catch (error) {
+    console.error("Onboarding Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: getErrorMessage(error),
+    });
   }
-}
+};
