@@ -7,6 +7,7 @@ import { sendMail } from "../utils/mailer.js";
 import User from "../models/user.model.js";
 import RefreshToken from "../models/refreshToken.model.js";
 import PasswordResetToken from "../models/passwordResetToken.model.js";
+import Onboarding from "../models/onboarding.model.js";
 
 
 
@@ -36,6 +37,7 @@ export const Register = async (req: Request, res: Response): Promise<void> => {
       name,
       email,
       password: hashed,
+      isOnboarding: false,
     });
 
     const accessToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET!, {
@@ -353,3 +355,57 @@ export const resetPassword = async (
     });
   }
 };
+
+export const onBoarding = async (req:Request , res:Response)=>{
+  const userId = req.userId;
+
+  if(!userId){
+    res.status(401).json({
+      message:"Unauthorized"
+    })
+    return;
+  }
+
+  const {bio} = req.body;
+
+  if(!bio){
+    res.status(411).json({
+      message:"input field is missing"
+    })
+    return;
+  }
+  try{
+    const user= await User.findById(userId);
+
+    if(!user){
+      res.status(404).json({
+        message:"User not found"
+      })
+      return;
+    }
+
+    const onboarding = await Onboarding.create({
+      bio: bio,
+      id: new mongoose.Types.ObjectId().toString(),
+      userId: user._id.toString(),
+      user: user._id as mongoose.Types.ObjectId
+    })
+
+    const updatedUser = await User.findByIdAndUpdate(userId,{
+      isOnboarding:true,
+      onboarding: onboarding._id as mongoose.Types.ObjectId
+    },{new:true})
+
+    res.status(200).json({
+      message:"Onboarding completed successfully",
+      user:updatedUser,
+      onboarding:onboarding
+    })
+
+  }catch(error: any){
+    console.error(error);
+    res.status(500).json({
+      message:"Internal server error"
+    })
+  }
+}

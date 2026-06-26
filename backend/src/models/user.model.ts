@@ -19,7 +19,7 @@ const userSchema = new mongoose.Schema({
         type:String,
         required:true
     },
-    onboardingCompleted:{
+    isOnboarding:{
         type:Boolean,
         default:false,
 
