@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import mongoose from "mongoose";
+import { Readable } from "node:stream";
 import { sendMail } from "../utils/mailer.js";
 import User from "../models/user.model.js";
 import RefreshToken from "../models/refreshToken.model.js";
@@ -24,6 +25,39 @@ const getErrorMessage = (error: unknown) => {
   } catch {
     return "Unknown error";
   }
+};
+
+const uploadImageBuffer = async (file: Express.Multer.File) => {
+  const result = await Promise.race([
+    new Promise<{ secure_url: string }>((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder: "chat-app/profile",
+          resource_type: "image",
+        },
+        (error, result) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+
+          if (!result?.secure_url) {
+            reject(new Error("Cloudinary upload failed"));
+            return;
+          }
+
+          resolve({ secure_url: result.secure_url });
+        },
+      );
+
+      Readable.from(file.buffer).pipe(stream);
+    }),
+    new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error("Cloudinary upload timed out")), 15000);
+    }),
+  ]);
+
+  return result.secure_url;
 };
 
 export const Register = async (req: Request, res: Response): Promise<void> => {
@@ -387,11 +421,11 @@ export const onBoarding = async (req: Request, res: Response) => {
     let imageUrl = "";
 
     if (req.file) {
-      const fileData = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
-
-      const result = await cloudinary.uploader.upload(fileData);
-
-      imageUrl = result.secure_url;
+      try {
+        imageUrl = await uploadImageBuffer(req.file);
+      } catch (error) {
+        console.warn("Profile image upload skipped:", getErrorMessage(error));
+      }
     }
 
     const user = await User.findById(userId);

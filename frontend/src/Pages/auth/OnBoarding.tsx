@@ -59,7 +59,7 @@ const OnBoarding = () => {
 
           <div className="flex justify-center mb-6">
             <label
-              htmlFor="profile"
+              htmlFor="profilePic"
               className="cursor-pointer relative"
             >
               <div className="w-28 h-28 rounded-full border-2 border-dashed border-indigo-500 flex items-center justify-center overflow-hidden bg-white/5">
@@ -89,7 +89,7 @@ const OnBoarding = () => {
 
               <input
                 hidden
-                id="profile"
+                id="profilePic"
                 type="file"
                 accept="image/*"
                 onChange={handleImage}
