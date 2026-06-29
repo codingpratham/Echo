@@ -1,4 +1,4 @@
-import React from "react";
+import {ButtonG} from '../../components/ButtonG'
 
 const MainPage = () => {
   const users = [
@@ -14,7 +14,7 @@ const MainPage = () => {
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center px-5 py-8 overflow-hidden">
-
+      <ButtonG/>
       {/* Background Glow */}
       <div className="fixed inset-0 -z-10 pointer-events-none">
         <div className="absolute left-1/2 top-0 -translate-x-1/2 w-[700px] h-[350px] bg-gradient-to-tr from-indigo-700/40 to-transparent rounded-full blur-3xl" />
