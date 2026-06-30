@@ -4,7 +4,7 @@ import * as React from "react"
 import {
 
 
-  MoreHorizontalIcon,
+  MoreVerticalIcon,
 
 
 } from "lucide-react"
@@ -28,7 +28,7 @@ export function ButtonG() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="icon" aria-label="More Options">
-              <MoreHorizontalIcon />
+              <MoreVerticalIcon />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-40">
